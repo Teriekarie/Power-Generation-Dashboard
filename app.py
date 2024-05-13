@@ -63,7 +63,7 @@ st.title('⚡ Power Generation Analysis')
 # Load the dataset
 @st.cache_data  # Use the cache decorator to only load the data once
 def load_data():
-    data = pd.read_csv("C:/Users/terre/Documents/CODES/VAP/grid_analysis/file8.csv")
+    data = pd.read_csv("file8.csv")
     data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
     data['Year'] = data['Date'].dt.year
     data['Month'] = data['Date'].dt.strftime('%Y-%m')
