@@ -100,7 +100,7 @@ total_gencos = filtered_data['Genco Name'].nunique()  # Count unique Gencos
 average_power_generated = round(filtered_data['TotalGeneration'].mean(), 2)  # Calculate average TotalGeneration
 average_restoration_time = round(filtered_data['Restoration_time'].mean())  # Calculate average Restoration Time
 average_operational_hours = round(filtered_data['Operational Hours'].mean())  # Calculate average Operational Hours
-average_downtime = round(filtered_data['Downtime Count'].sum())  # Calculate average Downtime
+average_downtime = round(filtered_data['Downtime Count'].mean())  # Calculate average Downtime
 icons = {
     "gencos": "🏭",
     "power": "⚡",
@@ -115,7 +115,7 @@ st.markdown(f"""
     <div class='metric-card'>{icons['power']} Average Power Generated: {average_power_generated:.2f} MW</div>
     <div class='metric-card'>{icons['time']} Average Restoration Time: {average_restoration_time} hours</div>
     <div class='metric-card'>{icons['hours']} Average Operational Hours: {average_operational_hours} hours</div>
-    <div class='metric-card'>{icons['downtime']} Total Downtime Count: {average_downtime} times</div>
+    <div class='metric-card'>{icons['downtime']} Average Downtime Count: {average_downtime} count</div>
 </div>
 <div class='divider'></div>
 """, unsafe_allow_html=True)
@@ -242,9 +242,30 @@ st.markdown(f"""
 # Display charts
 chart1_col, chart2_col = st.columns(2)
 chart3_col, chart4_col = st.columns(2)
-chart5_col = st.columns(1)
+#chart5_col, chart6_col = st.columns([1, 1])  # This creates two columns side by side
 
 
+
+# with chart1_col:
+#     # Generate chart for Total Power Generation Trends
+#     if filtered_data.empty:
+#         st.write("No data available for the selected date range.")
+#     else:
+#         if start_date == end_date:
+#             # Filter data for the selected day
+#             day_data = filtered_data[filtered_data['Date'].dt.date == start_date.date()]
+#             # Group by hour and sum the PowerGenerated for each hour
+#             hourly_data = day_data.groupby('Hour').agg(TotalPowerGenerated=('TotalGeneration', 'sum')).reset_index()
+#             # Create a chart for the hourly power generation
+#             chart = alt.Chart(hourly_data).mark_bar().encode(
+#                 x=alt.X('Hour:O', title='Hour of the Day'),
+#                 y=alt.Y('TotalPowerGenerated:Q', title='Power Generated (MW)'),
+#                 tooltip=[alt.Tooltip('Hour:O', title='Hour'), alt.Tooltip('TotalPowerGenerated:Q', title='Power Generated (MW)')]
+#             ).properties(
+#                 title='Hourly Power Generation for Selected Day',
+#                 width=350
+#             )
+#             st.altair_chart(chart, use_container_width=True)
 with chart1_col:
     # Generate chart for Total Power Generation Trends
     if filtered_data.empty:
@@ -253,18 +274,19 @@ with chart1_col:
         if start_date == end_date:
             # Filter data for the selected day
             day_data = filtered_data[filtered_data['Date'].dt.date == start_date.date()]
-            # Group by hour and sum the PowerGenerated for each hour
-            hourly_data = day_data.groupby('Hour').agg(TotalPowerGenerated=('TotalGeneration', 'sum')).reset_index()
-            # Create a chart for the hourly power generation
-            chart = alt.Chart(hourly_data).mark_bar().encode(
-                x=alt.X('Hour:O', title='Hour of the Day'),
-                y=alt.Y('TotalPowerGenerated:Q', title='Power Generated (MW)'),
-                tooltip=[alt.Tooltip('Hour:O', title='Hour'), alt.Tooltip('TotalPowerGenerated:Q', title='Power Generated (MW)')]
+            # Group by day and calculate the average power generated for each day
+            daily_data = day_data.groupby(day_data['Date'].dt.day)['TotalGeneration'].mean().reset_index()
+            # Create a bar chart for the average power generation by day
+            chart = alt.Chart(daily_data).mark_bar().encode(
+                x=alt.X('Date:O', title='Day of the Month'),
+                y=alt.Y('TotalGeneration:Q', title='Average Power Generated (MW)'),
+                tooltip=['Date:O', 'TotalGeneration:Q']
             ).properties(
-                title='Hourly Power Generation for Selected Day',
+                title='Daily Average Power Generation',
                 width=350
             )
-            st.altair_chart(chart, use_container_width=True)
+            # st.altair_chart(chart, use_container_width=True)
+
         elif start_date.year == end_date.year and start_date.month == end_date.month:
             # Aggregating data by day when the same month and year are selected
             data_to_plot = filtered_data.groupby(filtered_data['Date'].dt.day)['TotalGeneration'].sum().reset_index(name='TotalGeneration')
@@ -276,7 +298,7 @@ with chart1_col:
                 title='Daily Power Generation Trends',
                 width=350
             )
-            st.altair_chart(chart, use_container_width=True)
+            # st.altair_chart(chart, use_container_width=True)
         elif start_date.year == end_date.year:
             data_to_plot = filtered_data.groupby('Month')['TotalGeneration'].sum().reset_index()
             data_to_plot['Month'] = pd.to_datetime(data_to_plot['Month'])
@@ -288,7 +310,7 @@ with chart1_col:
                 title='Monthly Power Generation Trends',
                 width=350
             )
-            st.altair_chart(chart, use_container_width=True)
+            # st.altair_chart(chart, use_container_width=True)
         else:
             data_to_plot = filtered_data.groupby('Year')['TotalGeneration'].sum().reset_index()
             chart = alt.Chart(data_to_plot).mark_bar().encode(
@@ -299,20 +321,32 @@ with chart1_col:
                 title='Yearly Power Generation Trends',
                 width=350
             )
-            st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, use_container_width=True)
 
 
 
 with chart2_col:
-    # Generate chart for Average Operational Hours
-    if start_date == end_date:  # Display hourly data if only one day is selected
-        hourly_data = filtered_data.groupby(['Hour'])['Operational Hours'].mean().reset_index()
-        operational_hours_chart = alt.Chart(hourly_data).mark_line(point=True).encode(
-            x=alt.X('Hour:O', title='Hour of the Day'),
-            y=alt.Y('Operational Hours:Q', title='Average Operational Hours'),
-            tooltip=['Hour:O', 'Operational Hours:Q']
+    # # Generate chart for Average Operational Hours
+    # if start_date == end_date:  # Display hourly data if only one day is selected
+    #     hourly_data = filtered_data.groupby(['Hour'])['Operational Hours'].mean().reset_index()
+    #     operational_hours_chart = alt.Chart(hourly_data).mark_line(point=True).encode(
+    #         x=alt.X('Hour:O', title='Hour of the Day'),
+    #         y=alt.Y('Operational Hours:Q', title='Average Operational Hours'),
+    #         tooltip=['Hour:O', 'Operational Hours:Q']
+    #     ).properties(
+    #         title='Hourly Average Operational Hours',
+    #         width=350
+    #     )
+        # Generate chart for Total Downtime Count Trends
+    if start_date == end_date:  # Display daily data if only one day is selected
+        hourly_data = filtered_data.groupby(filtered_data['Date'].dt.day)['Operational Hours'].mean().reset_index()
+        # Create a bar chart for the average restoration duration by day
+        operational_hours_chart = alt.Chart(hourly_data).mark_bar().encode(
+            x=alt.X('Date:O', title='Day of the Month'),
+            y=alt.Y('Operational Hours:Q', title='Average Restoration Duration'),
+            tooltip=['Date:O', 'Operational Hours:Q']
         ).properties(
-            title='Hourly Average Operational Hours',
+            title='Daily Average Operational Hours (Bar Chart)',
             width=350
         )
     elif start_date.month == end_date.month:  # Display daily data if within the same month
@@ -349,16 +383,18 @@ with chart2_col:
             )
     st.altair_chart(operational_hours_chart, use_container_width=True)
 
+
 with chart3_col:
     # Generate chart for Total Downtime Count Trends
-    if start_date == end_date:  # Display hourly data if only one day is selected
-        hourly_downtime = filtered_data.groupby(['Hour'])['Downtime Count'].sum().reset_index()
-        downtime_chart = alt.Chart(hourly_downtime).mark_bar().encode(
-            y=alt.Y('Hour:O', title='Hour of the Day', axis=alt.Axis(ticks=True)),
-            x=alt.X('Downtime Count:Q', title='Total Downtime Count'),
-            tooltip=['Hour:O', 'Downtime Count:Q']
+    if start_date == end_date:  # Display daily data if only one day is selected
+        daily_restoration = filtered_data.groupby(filtered_data['Date'].dt.day)['Restoration_time'].mean().reset_index()
+        # Create a bar chart for the average restoration duration by day
+        downtime_chart = alt.Chart(daily_restoration).mark_bar().encode(
+            x=alt.X('Date:O', title='Day of the Month'),
+            y=alt.Y('Restoration_time:Q', title='Average Restoration Duration'),
+            tooltip=['Date:O', 'Restoration_time:Q']
         ).properties(
-            title='Hourly Downtime Count',
+            title='Daily Restoration Duration (Bar Chart)',
             width=350
         )
     elif start_date.month == end_date.month:  # Display daily data if within the same month
@@ -394,19 +430,23 @@ with chart3_col:
                 width=350
             )
     st.altair_chart(downtime_chart, use_container_width=True)
-
+    
+ 
 with chart4_col:
     # Generate chart for Restoration Duration Trends
-    if start_date == end_date:  # Display hourly data if only one day is selected
-        hourly_restoration = filtered_data.groupby(['Hour'])['Restoration_time'].mean().reset_index()
-        restoration_chart = alt.Chart(hourly_restoration).mark_line(point=True).encode(
-            x=alt.X('Hour:O', title='Hour of the Day'),
+    if start_date == end_date:  # Display daily data if only one day is selected
+        daily_restoration = filtered_data.groupby(filtered_data['Date'].dt.day)['Restoration_time'].mean().reset_index()
+        # Create a bar chart for the average restoration duration by day
+        restoration_chart = alt.Chart(daily_restoration).mark_bar().encode(
+            x=alt.X('Date:O', title='Day of the Month'),
             y=alt.Y('Restoration_time:Q', title='Average Restoration Duration'),
-            tooltip=['Hour:O', 'Restoration_time:Q']
+            tooltip=['Date:O', 'Restoration_time:Q']
         ).properties(
-            title='Hourly Restoration Duration',
+            title='Daily Restoration Duration (Bar Chart)',
             width=350
         )
+        #st.altair_chart(restoration_chart, use_container_width=True)
+        
     elif start_date.month == end_date.month:  # Display daily data if within the same month
         daily_restoration = filtered_data.groupby(filtered_data['Date'].dt.day)['Restoration_time'].mean().reset_index()
         restoration_chart = alt.Chart(daily_restoration).mark_line(point=True).encode(
@@ -414,7 +454,7 @@ with chart4_col:
             y=alt.Y('Restoration_time:Q', title='Average Restoration Duration'),
             tooltip=['Date:O', 'Restoration_time:Q']
         ).properties(
-            title='Daily Restoration Duration',
+            title='Daily Average Restoration Time',
             width=350
         )
     else:  # Year or default view
@@ -426,7 +466,7 @@ with chart4_col:
                 y=alt.Y('Restoration_time:Q', title='Average Restoration Duration'),
                 tooltip=['month(Month):O', 'Restoration_time:Q']
             ).properties(
-                title='Monthly Restoration Duration',
+                title='Monthly Average Restoration Time',
                 width=350
             )
         else:
@@ -436,32 +476,87 @@ with chart4_col:
                 y=alt.Y('Restoration_time:Q', title='Average Restoration Duration'),
                 tooltip=['Year:O', 'Restoration_time:Q']
             ).properties(
-                title='Yearly Restoration Duration',
+                title='Yearly Average Restoration Time',
                 width=350
             )
     st.altair_chart(restoration_chart, use_container_width=True)
 
-
-# Generate chart for Max and Min Power Trends
-# Generate chart for Max and Min Power Trends
 power_data = filtered_data.groupby('Genco Name').agg(
     Max_Power=('Max Power', 'max'),
     Min_Power=('Min Power', 'min')
 ).reset_index()
+
+# Melt the DataFrame for Altair
 melted_power_data = power_data.melt(
     id_vars=['Genco Name'],
     value_vars=['Max_Power', 'Min_Power'],
-    var_name='Type',
+    var_name='Power Type',
     value_name='Power'
 )
+
+# Create the grouped bar chart with a narrower width
 power_chart = alt.Chart(melted_power_data).mark_bar().encode(
-    x=alt.X('Genco Name:N', axis=alt.Axis(title='Genco Name')),
-    y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)')),
-    color='Type:N',
-    column='Type:N'
+    x=alt.X('Power Type:N', axis=alt.Axis(title=None)),  # X-axis displays Power Type
+    y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)'), scale=alt.Scale(zero=False)),  # Y-axis displays power values, do not include zero to better visualize differences
+    color='Power Type:N',  # Color distinction for Max and Min power
+    column=alt.Column('Genco Name:N', header=alt.Header(title=None, labels=False)),  # Groups Genco names side by side without displaying labels at the top
+    tooltip=['Genco Name', 'Power Type', 'Power']
 ).properties(
     title="Max and Min Power by Genco",
-    width=350
+    width=alt.Step(40)  # Adjust the width as needed (e.g., 40 pixels)
 )
 
 st.altair_chart(power_chart, use_container_width=True)
+
+
+
+
+# Aggregate data for Max and Min Power
+# power_data = filtered_data.groupby('Genco Name').agg(
+#     Max_Power=('Max Power', 'max'),
+#     Min_Power=('Min Power', 'min')
+# ).reset_index()
+
+# # Melt the DataFrame for Altair
+# melted_power_data = power_data.melt(
+#     id_vars=['Genco Name'],
+#     value_vars=['Max_Power', 'Min_Power'],
+#     var_name='Power Type',
+#     value_name='Power'
+# )
+# # # Create the grouped bar chart with a narrower width
+# power_chart = alt.Chart(melted_power_data).mark_bar().encode(
+#     x=alt.X('Power Type:N', axis=alt.Axis(title=None)),  # X-axis displays Power Type
+#     y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)'), scale=alt.Scale(zero=False)),  # Y-axis displays power values, do not include zero to better visualize differences
+#     color='Power Type:N',  # Color distinction for Max and Min power
+#     row=alt.Row('Genco Name:N', header=alt.Header(title=None, labels=False)),  # Groups Genco names in separate rows
+#     tooltip=['Genco Name', 'Power Type', 'Power']
+# ).properties(
+#     title="Max and Min Power by Genco",
+# )
+
+# st.altair_chart(power_chart, use_container_width=True)
+
+# Assuming chart5_col is already in use and you want another column for the new chart
+chart5_col, chart6_col = st.columns(2)  # Adjust number and layout as needed
+
+with st.container():
+    if filtered_data.empty:
+        st.write("No data available for the selected date range.")
+    else:
+        # Summing up TotalGeneration by Genco
+        genco_total_generation = filtered_data.groupby('Genco Name')['TotalGeneration'].sum().reset_index()
+
+        # Create a chart for the total power generation by Genco
+        genco_power_chart = alt.Chart(genco_total_generation).mark_bar().encode(
+            x=alt.X('Genco Name:N', title='Genco Name', sort='-y'),  # Sort bars based on the y value
+            y=alt.Y('TotalGeneration:Q', title='Total Power Generated (MW)', scale=alt.Scale(domain=[0, 250000])),  # Adjust the y-axis scale
+            color=alt.Color('Genco Name:N', legend=None),  # Remove the legend for cleaner visuals
+            tooltip=[alt.Tooltip('Genco Name:N', title='Genco Name'), alt.Tooltip('TotalGeneration:Q', title='Total Power Generated (MW)')]
+        ).properties(
+            title='Total Power Generation by Genco',
+            width=350,
+            height=400  # Extend the height for better title visibility
+        )
+        st.altair_chart(genco_power_chart, use_container_width=True)
+
