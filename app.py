@@ -115,7 +115,7 @@ st.markdown(f"""
     <div class='metric-card'>{icons['power']} Average Power Generated: {average_power_generated:.2f} MW</div>
     <div class='metric-card'>{icons['time']} Average Restoration Time: {average_restoration_time} hours</div>
     <div class='metric-card'>{icons['hours']} Average Operational Hours: {average_operational_hours} hours</div>
-    <div class='metric-card'>{icons['downtime']} Average Downtime Count: {average_downtime} count</div>
+    <div class='metric-card'>{icons['downtime']} Average Downtime Occurence: {average_downtime} </div>
 </div>
 <div class='divider'></div>
 """, unsafe_allow_html=True)
@@ -459,6 +459,7 @@ with chart4_col:
             )
     st.altair_chart(restoration_chart, use_container_width=True)
 
+
 power_data = filtered_data.groupby('Genco Name').agg(
     Max_Power=('Max Power', 'max'),
     Min_Power=('Min Power', 'min')
@@ -471,13 +472,24 @@ melted_power_data = power_data.melt(
     var_name='Power Type',
     value_name='Power'
 )
+# Create the bar chart for Max_Power
+max_power_bar_chart = alt.Chart(melted_power_data[melted_power_data['Power Type'] == 'Max_Power']).mark_bar().encode(
+    x=alt.X('Genco Name:N', axis=alt.Axis(title='GenCo Name')),  # X-axis displays Genco Name
+    y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)'), scale=alt.Scale(zero=False)),  # Y-axis displays power values, do not include zero to better visualize differences
+    color=alt.value('blue'),  # Set color for Max_Power
+    tooltip=['Genco Name', 'Power']
+).properties(
+    title="Maximum Power by Genco",
+    width=alt.Step(40)  # Adjust the width as needed (e.g., 40 pixels)
+)
 
-# Create the grouped bar chart with a narrower width
+st.altair_chart(max_power_bar_chart, use_container_width=True)
+
+
 # power_chart = alt.Chart(melted_power_data).mark_bar().encode(
-#     x=alt.X('Power Type:N', axis=alt.Axis(title=None)),  # X-axis displays Power Type
+#     x=alt.X('Genco Name:N', axis=alt.Axis(title=None)),  # X-axis displays Genco Name
 #     y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)'), scale=alt.Scale(zero=False)),  # Y-axis displays power values, do not include zero to better visualize differences
-#     color='Power Type:N',  # Color distinction for Max and Min power
-#     column=alt.Column('Genco Name:N', header=alt.Header(title=None, labels=False)),  # Groups Genco names side by side without displaying labels at the top
+#     color='Power Type:N',  # Color distinction for Max and Min power is now shown as legends
 #     tooltip=['Genco Name', 'Power Type', 'Power']
 # ).properties(
 #     title="Max and Min Power by Genco",
@@ -485,23 +497,23 @@ melted_power_data = power_data.melt(
 # )
 
 # st.altair_chart(power_chart, use_container_width=True)
-power_chart = alt.Chart(melted_power_data).mark_bar().encode(
-    x=alt.X('Genco Name:N', axis=alt.Axis(title=None)),  # X-axis displays Genco Name
-    y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)'), scale=alt.Scale(zero=False)),  # Y-axis displays power values, do not include zero to better visualize differences
-    color='Power Type:N',  # Color distinction for Max and Min power is now shown as legends
-    tooltip=['Genco Name', 'Power Type', 'Power']
-).properties(
-    title="Max and Min Power by Genco",
-    width=alt.Step(40)  # Adjust the width as needed (e.g., 40 pixels)
-)
 
-st.altair_chart(power_chart, use_container_width=True)
+# Create the line chart with dots for Max_Power and Min_Power
+# line_chart_with_dots = alt.Chart(melted_power_data).mark_line(point=True).encode(
+#     x=alt.X('Genco Name:N', axis=alt.Axis(title=None)),  # X-axis displays Genco Name
+#     y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)'), scale=alt.Scale(zero=False)),  # Y-axis displays power values, do not include zero to better visualize differences
+#     color='Power Type:N',  # Color distinction for Max and Min power
+#     tooltip=['Genco Name', 'Power Type', 'Power']
+# ).properties(
+#     title="Max and Min Power by Genco",
+#     width=alt.Step(40)  # Adjust the width as needed (e.g., 40 pixels)
+# )
+
+# st.altair_chart(line_chart_with_dots, use_container_width=True)
 
 
 
-
-
-# Aggregate data for Max and Min Power
+# # Aggregate data for Max and Min Power
 # power_data = filtered_data.groupby('Genco Name').agg(
 #     Max_Power=('Max Power', 'max'),
 #     Min_Power=('Min Power', 'min')
@@ -514,7 +526,7 @@ st.altair_chart(power_chart, use_container_width=True)
 #     var_name='Power Type',
 #     value_name='Power'
 # )
-# # # Create the grouped bar chart with a narrower width
+# # Create the grouped bar chart with a narrower width
 # power_chart = alt.Chart(melted_power_data).mark_bar().encode(
 #     x=alt.X('Power Type:N', axis=alt.Axis(title=None)),  # X-axis displays Power Type
 #     y=alt.Y('Power:Q', axis=alt.Axis(title='Power (MW)'), scale=alt.Scale(zero=False)),  # Y-axis displays power values, do not include zero to better visualize differences
